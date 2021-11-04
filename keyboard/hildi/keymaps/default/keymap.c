@@ -24,8 +24,6 @@ enum layer_names {
 enum custom_keycodes {
     QMK_AT,
     QMK_HASH,
-    QMK_GT,
-    QMK_LT,
     QMK_RLD,
     QMK_CLR,
 };
@@ -49,8 +47,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case QMK_AT:   if (record->event.pressed) { SEND_STRING("@"); } break;
         case QMK_HASH: if (record->event.pressed) { SEND_STRING("#"); } break;
-        case QMK_GT:   if (record->event.pressed) { SEND_STRING(">"); } break;
-        case QMK_LT:   if (record->event.pressed) { SEND_STRING("<"); } break;
         case QMK_RLD:  if (record->event.pressed) { SEND_STRING(SS_LCTL("r")); } break;
         case QMK_CLR:  if (record->event.pressed) { SEND_STRING(SS_LCTL("k")); } break;
     }
