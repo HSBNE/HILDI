@@ -20,11 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config_common.h"
 
 /* USB Device descriptor parameter */
-#define VENDOR_ID    0xBEEF
-#define PRODUCT_ID   0x1337
+#define VENDOR_ID    0x1337
+#define PRODUCT_ID   0xBEEF
 #define DEVICE_VER   0x0001
 #define MANUFACTURER Dave Seff
-#define PRODUCT      hildi
+#define PRODUCT      hildi-keypad
 
 /* key matrix size */
 #define MATRIX_ROWS 8

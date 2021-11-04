@@ -28,7 +28,6 @@ enum custom_keycodes {
     QMK_LT,
     QMK_RLD,
     QMK_CLR,
-    QMK_NONE,
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -42,7 +41,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 /* E */ QMK_AT,   QMK_HASH,KC_F22,  KC_R,      KC_F11,  KC_COMM, KC_DOT,  KC_ESC,  KC_P,
 /* F */ KC_F13,   KC_F14,  KC_F15,  KC_F16,    KC_F17,  KC_F18,  KC_F19,  KC_F20,  KC_F21,
 /* G */ KC_F3,    KC_F5,   KC_O,    QMK_RLD,   QMK_CLR, KC_F10,  KC_F23,  KC_F9,   KC_F24,
-/* H */ KC_DOT,   KC_0,    KC_MINS, KC_B,      KC_C,    KC_SPC,  KC_ENT  ,KC_HOME, QMK_NONE
+/* H */ KC_DOT,   KC_0,    KC_MINS, KC_B,      KC_C,    KC_SPC,  KC_ENT  ,KC_HOME, KC_END
     ),
 };
 
@@ -54,7 +53,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case QMK_LT:   if (record->event.pressed) { SEND_STRING("<"); } break;
         case QMK_RLD:  if (record->event.pressed) { SEND_STRING(SS_LCTL("r")); } break;
         case QMK_CLR:  if (record->event.pressed) { SEND_STRING(SS_LCTL("k")); } break;
-        case QMK_NONE: if (record->event.pressed) { SEND_STRING(" "); } break;
     }
     return true;
 }
