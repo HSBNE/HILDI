@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Exec=/usr/bin/linuxcnc /home/hsbne/linuxcnc/configs/HILDI/HILDI.ini
+Icon=linuxcncicon
+X-GNOME-DocPath=
+Terminal=false
+Name=LinuxCNC
+Comment=Linuxcnc Machine Controller
+StartupNotify=false
+Categories=Science;X-CNC;
+Path=/home/hsbne/linuxcnc

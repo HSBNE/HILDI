@@ -1,1 +1,2 @@
 *.FCStd1
+linuxc_config/linuxcnc/nc_files/*

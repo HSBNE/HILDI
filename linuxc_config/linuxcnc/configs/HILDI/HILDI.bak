@@ -6,86 +6,9 @@
 loadrt [KINS]KINEMATICS
 loadrt [EMCMOT]EMCMOT servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[KINS]JOINTS
 loadrt hostmot2
-loadrt hm2_eth board_ip="10.10.10.10" config=" num_encoders=1 num_pwmgens=0 num_stepgens=3 sserial_port_0=20xxxx" 
-setp    hm2_7i76e.0.watchdog.timeout_ns 100000000
+loadrt hm2_eth board_ip="10.10.10.10" config=" num_encoders=1 num_pwmgens=0 num_stepgens=3 sserial_port_0=00xxxx" 
+setp    hm2_7i76e.0.watchdog.timeout_ns 10000000
 loadrt pid names=pid.x,pid.y,pid.z,pid.s
-
-# ---Traffic Lights ---
-loadrt and2 count=2
-loadrt xor2 count=1
-loadrt siggen num_chan=1
-addf and2.0 servo-thread
-addf and2.1 servo-thread
-addf xor2.0 servo-thread
-addf siggen.0.update servo-thread
-
-setp siggen.0.frequency 2
-
-#Yellow Light
-net yellow-in1 <= halui.machine.is-on => and2.0.in0
-net yellow-in2 <= halui.program.is-idle => and2.0.in1 
-net yellow-out <= and2.0.out
-net yellow-out => hm2_7i76e.0.7i76.0.0.output-09
-
-#Green Light
-net green-in1 <= halui.program.is-running => xor2.0.in0
-net green-in2 <= halui.program.is-paused => and2.1.in1
-net flash <= siggen.0.clock => and2.1.in0
-net green-flash <= and2.1.out => xor2.0.in1
-net green-on <= xor2.0.out => hm2_7i76e.0.7i76.0.0.output-08
-
-#Red Light
-net red-on <= halui.estop.is-activated => hm2_7i76e.0.7i76.0.0.output-10
-
-
-# --- MPG ---
-loadrt mux4 count=1
-addf mux4.0 servo-thread
-
-# In linux 2.8 "joints" (i.e. your motors) and axes (your directions x, y, z) are seperated.
-# However, for my simple three axis mill with one motor per axis this is not particularly
-# useful. We need to tie the joints to the axes (joint.0 = axis.x, joint.1 = axis.y,
-# and joint.2 = axis.z)
-
-# When jog-vel-mode is set to 0 the axis will move jog-scale
-# When jog-vel-mode is set to 1 the axis will stop when the
-# handwheel stops turning
-
-setp joint.0.jog-vel-mode 0
-setp joint.1.jog-vel-mode 0
-setp joint.2.jog-vel-mode 0
-
-setp axis.x.jog-vel-mode 0
-setp axis.y.jog-vel-mode 0
-setp axis.z.jog-vel-mode 0
-
-# This sets the scale that will be used based on the input to the mux4
-# This mill reads in metric units so jog scale is 1mm, 0.1mm, and 0.01mm
-setp mux4.0.in0 1
-setp mux4.0.in1 0.01
-setp mux4.0.in2 0.1
-
-#The inputs to the mux4 component
-net scale1 mux4.0.sel0 <= hm2_7i76e.0.7i76.0.0.input-10
-net scale2 mux4.0.sel1 <= hm2_7i76e.0.7i76.0.0.input-11
-
-#The output from the mux4 is sent to each axis jog scale
-net mpg-scale <= mux4.0.out
-net mpg-scale => joint.0.jog-scale => axis.x.jog-scale
-net mpg-scale => joint.1.jog-scale => axis.y.jog-scale
-net mpg-scale => joint.2.jog-scale => axis.z.jog-scale
-
-#The Axis select inputs
-net mpg-x joint.0.jog-enable <= axis.x.jog-enable <= hm2_7i76e.0.7i76.0.0.input-07
-net mpg-y joint.1.jog-enable <= axis.y.jog-enable <= hm2_7i76e.0.7i76.0.0.input-08
-net mpg-z joint.2.jog-enable <= axis.z.jog-enable <= hm2_7i76e.0.7i76.0.0.input-09
-
-#The encoded output counts to the axis. Only selected axis will move.
-net encoder-counts <= hm2_7i76e.0.7i76.0.0.enc0.count
-net encoder-counts => joint.0.jog-counts => axis.x.jog-counts
-net encoder-counts => joint.1.jog-counts => axis.y.jog-counts
-net encoder-counts => joint.2.jog-counts => axis.z.jog-counts
-
 
 addf hm2_7i76e.0.read          servo-thread
 addf motion-command-handler   servo-thread
@@ -118,9 +41,6 @@ net home-y     <=  hm2_7i76e.0.7i76.0.0.input-01
 
 # --- HOME-Z ---
 net home-z     <=  hm2_7i76e.0.7i76.0.0.input-02
-
-# --- Tool setter ---
-net probe-in  motion.probe-input <= hm2_7i76e.0.7i76.0.0.input-03-not
 
 #*******************
 #  AXIS X JOINT 0
@@ -358,7 +278,7 @@ net jog-selected-neg      halui.axis.selected.minus
 net spindle-manual-cw     halui.spindle.0.forward
 net spindle-manual-ccw    halui.spindle.0.reverse
 net spindle-manual-stop   halui.spindle.0.stop
-#net machine-is-on         halui.machine.is-on
+net machine-is-on         halui.machine.is-on
 net jog-speed             halui.axis.jog-speed
 net MDI-mode              halui.mode.is-mdi
 
@@ -368,7 +288,8 @@ net coolant-mist      <=  iocontrol.0.coolant-mist
 net coolant-flood     <=  iocontrol.0.coolant-flood
 
 #  ---probe signal---
-net probe-in   =>  motion.probe-input
+
+net probe-in     =>  motion.probe-input
 
 #  ---motion control signals---
 
@@ -384,8 +305,9 @@ net estop-out     =>  iocontrol.0.emc-enable-in
 
 #  ---manual tool change signals---
 
-loadusr -W /home/hsbne/linuxcnc/hal_manualtoolchange.py
+loadusr -W hal_manualtoolchange
 net tool-change-request     iocontrol.0.tool-change       =>  hal_manualtoolchange.change
 net tool-change-confirmed   iocontrol.0.tool-changed      <=  hal_manualtoolchange.changed
 net tool-number             iocontrol.0.tool-prep-number  =>  hal_manualtoolchange.number
 net tool-prepare-loopback   iocontrol.0.tool-prepare      =>  iocontrol.0.tool-prepared
+

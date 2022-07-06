@@ -7,35 +7,8 @@ loadrt [KINS]KINEMATICS
 loadrt [EMCMOT]EMCMOT servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[KINS]JOINTS
 loadrt hostmot2
 loadrt hm2_eth board_ip="10.10.10.10" config=" num_encoders=1 num_pwmgens=0 num_stepgens=3 sserial_port_0=20xxxx" 
-setp    hm2_7i76e.0.watchdog.timeout_ns 100000000
+setp    hm2_7i76e.0.watchdog.timeout_ns 10000000
 loadrt pid names=pid.x,pid.y,pid.z,pid.s
-
-# ---Traffic Lights ---
-loadrt and2 count=2
-loadrt xor2 count=1
-loadrt siggen num_chan=1
-addf and2.0 servo-thread
-addf and2.1 servo-thread
-addf xor2.0 servo-thread
-addf siggen.0.update servo-thread
-
-setp siggen.0.frequency 2
-
-#Yellow Light
-net yellow-in1 <= halui.machine.is-on => and2.0.in0
-net yellow-in2 <= halui.program.is-idle => and2.0.in1 
-net yellow-out <= and2.0.out
-net yellow-out => hm2_7i76e.0.7i76.0.0.output-09
-
-#Green Light
-net green-in1 <= halui.program.is-running => xor2.0.in0
-net green-in2 <= halui.program.is-paused => and2.1.in1
-net flash <= siggen.0.clock => and2.1.in0
-net green-flash <= and2.1.out => xor2.0.in1
-net green-on <= xor2.0.out => hm2_7i76e.0.7i76.0.0.output-08
-
-#Red Light
-net red-on <= halui.estop.is-activated => hm2_7i76e.0.7i76.0.0.output-10
 
 
 # --- MPG ---
@@ -118,9 +91,6 @@ net home-y     <=  hm2_7i76e.0.7i76.0.0.input-01
 
 # --- HOME-Z ---
 net home-z     <=  hm2_7i76e.0.7i76.0.0.input-02
-
-# --- Tool setter ---
-net probe-in  motion.probe-input <= hm2_7i76e.0.7i76.0.0.input-03-not
 
 #*******************
 #  AXIS X JOINT 0
@@ -358,7 +328,7 @@ net jog-selected-neg      halui.axis.selected.minus
 net spindle-manual-cw     halui.spindle.0.forward
 net spindle-manual-ccw    halui.spindle.0.reverse
 net spindle-manual-stop   halui.spindle.0.stop
-#net machine-is-on         halui.machine.is-on
+net machine-is-on         halui.machine.is-on
 net jog-speed             halui.axis.jog-speed
 net MDI-mode              halui.mode.is-mdi
 
@@ -368,7 +338,8 @@ net coolant-mist      <=  iocontrol.0.coolant-mist
 net coolant-flood     <=  iocontrol.0.coolant-flood
 
 #  ---probe signal---
-net probe-in   =>  motion.probe-input
+
+net probe-in     =>  motion.probe-input
 
 #  ---motion control signals---
 
@@ -384,8 +355,9 @@ net estop-out     =>  iocontrol.0.emc-enable-in
 
 #  ---manual tool change signals---
 
-loadusr -W /home/hsbne/linuxcnc/hal_manualtoolchange.py
+loadusr -W hal_manualtoolchange
 net tool-change-request     iocontrol.0.tool-change       =>  hal_manualtoolchange.change
 net tool-change-confirmed   iocontrol.0.tool-changed      <=  hal_manualtoolchange.changed
 net tool-number             iocontrol.0.tool-prep-number  =>  hal_manualtoolchange.number
 net tool-prepare-loopback   iocontrol.0.tool-prepare      =>  iocontrol.0.tool-prepared
+
