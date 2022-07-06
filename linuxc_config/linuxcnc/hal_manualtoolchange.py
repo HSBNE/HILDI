@@ -33,19 +33,37 @@ def stop_polling_hal_in_background():
     if _after: app.after_cancel(_after)
     _after = None
 
+def tool_probe(n):
+    c = linuxcnc.command()
+    c.mdi("O<probe-tool>")
+    c.wait_complete()
+
 def do_change(n):
+    r = -1
     if n:
-        message = _("Insert tool %d and click continue when ready") % n
+        message = _("Insert tool %d and click 'Continue' to continue using existing offset or 'Set Height & Continue' to probe tool height.") % n
+        app.wm_withdraw()
+        app.update()
+        poll_hal_in_background()
+        try:
+            r = app.tk.call("nf_dialog", ".tool_change",
+                _("Tool change"), message, "info", 0, _("Continue", "Set Height & Continue"))
+            if isinstance(r, str): r = int(r)
+            if r == 1:
+                tool_probe(n)
+                r = 0
+        finally:
+            stop_polling_hal_in_background()
     else:
-        message = _("Remove the tool and click continue when ready")
-    app.wm_withdraw()
-    app.update()
-    poll_hal_in_background()
-    try:
-        r = app.tk.call("nf_dialog", ".tool_change",
-            _("Tool change"), message, "info", 0, _("Continue"))
-    finally:
-        stop_polling_hal_in_background()
+        message = _("Remove the tool and click 'Continue' when ready")
+        app.wm_withdraw()
+        app.update()
+        poll_hal_in_background()
+        try:
+            r = app.tk.call("nf_dialog", ".tool_change",
+                _("Tool change"), message, "info", 0, _("Continue"))
+        finally:
+            stop_polling_hal_in_background()
     if isinstance(r, str): r = int(r)
     if r == 0:
         h.changed = True
