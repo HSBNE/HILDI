@@ -1,0 +1,77 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<pyvcp>
+  <labelframe text="Current Tool">
+    <u32>
+      <halpin>"tool-number"</halpin>
+      <font>("Helvetica", 32)</font>
+    </u32>
+  </labelframe>
+  <labelframe text="Load Tool">
+    <button>
+      <halpin>"tool1-button"</halpin>
+      <text>"Probe\n Tool 1"</text>
+    </button>
+    <button>
+      <halpin>"tool2-button"</halpin>
+      <text>"Tool 2"</text>
+    </button>
+    <button>
+      <halpin>"tool3-button"</halpin>
+      <text>"Tool 3"</text>
+    </button>
+    <button>
+      <halpin>"tool4-button"</halpin>
+      <text>"Tool 4"</text>
+    </button>
+    <button>
+      <halpin>"tool5-button"</halpin>
+      <text>"Tool 5"</text>
+    </button>
+    <button>
+      <halpin>"tool6-button"</halpin>
+      <text>"Tool 6"</text>
+    </button>
+    <button>
+      <halpin>"tool7-button"</halpin>
+      <text>"Tool 7"</text>
+    </button>
+    <button>
+      <halpin>"tool8-button"</halpin>
+      <text>"Tool 8"</text>
+    </button>
+    <button>
+      <halpin>"tool9-button"</halpin>
+      <text>"Tool 9"</text>
+    </button>
+    <button>
+      <halpin>"tool10-button"</halpin>
+      <text>"Tool 10"</text>
+    </button>
+    <button>
+      <halpin>"tool11-button"</halpin>
+      <text>"Tool 11"</text>
+    </button>
+    <button>
+      <halpin>"tool12-button"</halpin>
+      <text>"Tool 12"</text>
+    </button>
+    <button>
+      <halpin>"tool13-button"</halpin>
+      <text>"Tool 13"</text>
+    </button>
+    <button>
+      <halpin>"tool14-button"</halpin>
+      <text>"Tool 14"</text>
+    </button>
+  </labelframe>
+
+  <labelframe text="Spindle Speed">
+    <number>
+      <halpin>"spindle-speed"</halpin>
+      <font>("Helvetica", 24)</font>
+      <format>"4d"</format>
+    </number>
+  </labelframe>
+
+
+</pyvcp>
