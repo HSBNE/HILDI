@@ -8,7 +8,7 @@
 ( In the LinuxCNC .ini config file, under the [RS274NGC] section add: )
 (    # change/add/use SUBROUTINE_PATH to point to the location where these tool-change subroutines are located: )
 (    SUBROUTINE_PATH = macros )
-(    REMAP=M10    modalgroup=10 ngc=probe_tool )
+(    REMAP=M190 modalgroup=4 ngc=probe_tool )
 
 ( and under the [EMCIO] section add: )
 (    TOOL_CHANGE_AT_G30 = 0 )
@@ -30,26 +30,8 @@
 ( net tool-number iocontrol.0.tool-prep-number => hal_manualtoolchange.number )
 ( net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared )
 
-( In addition I have had to modify the post-processor for the following; )
-( Eliminate G43 call outs after tool changes )
-( Use G53 instead of G28, typically just a check box when post processing )
-( Set machine home for Z in F360 machine setup to be -.250, my machine Zero is at top of travel )
-
 ( Usage: M6 in the g-code will invoke a manual tool change with automatic tool height adjustment. )
 
-( My sequence of Running; )
-( 1. Use a T99, a .250" Rod, to touch off X, Y, and Z of WCS as modeled in CAM )
-( 2. Manually call an M6 T99, tool will touch off on toolsetter and store tool height )
-( 3. Load program and run, M6 in program will prompt tool change, after changing, tool will touch off and Z will adjust )
-( 4. Run any and all code using the same desired Z height for the WCS as designed )
-
-( General theory of operation: touches each tool off to the tool height sensor. The first tool is used as the reference, all   )
-(     subsequent tools adjust the tool offset.                                                                                 )
-(     It is moved away by raising Z to _TravelZ before moving towards the switch, and when                                     )
-(     moving back from the switch again moves at height _TravelZ before going straight back down to the original position. Set )
-(     all necessary modes to ensure correct operation no matter what state the program is in when this is called. We eliminate )
-(     almost all side effects by saving and restoring the modal state. )
-(  )
 
 O<probe_tool> SUB
 
@@ -74,39 +56,38 @@ G49                                                     (PRINT,clear tool length
 G90                                                     (PRINT,use absolute positioning here )
 G94                                                     (PRINT,use feedrate in units/min )
 
-G59.3                                                   (PRINT, Change to co-ordinate system 9)
+G59.3                                                   (PRINT, Change to co-ordinate system 9 )
 G10 L2 P0 X[#<tsx>] Y[#<tsy>] Z[#<tsz>]                 (PRINT, Set coordinate system offset to toolsensor position)                                           (PRINT,absolute moves)
 
 O103 IF [#<_current_tool> EQ 1]                         (PRINT, If tool 1 is being probed)
-  G53 G0 Z[#<trv>]                                        (PRINT,go to high travel level on Z )
+  G53 G0 Z[#<trv>]                                        (PRINT,go to high travel level on Z - TOOL 1)
   #<zDelta>=[#<_z>-#<trv>]                                (PRINT,retrieve absolute offset )
-  G53 G0 X[#<tsx>] Y[#<tsy>]                              (PRINT,to tool setter )
+  G53 G0 X[#<tsx>] Y[#<tsy>]                              (PRINT,to tool setter  )
   G38.2 Z[#<_ini[AXIS_Z]MIN_LIMIT>+#<zDelta>] F[#<fast>]  (PRINT,trip switch slowly )
   G91                                                     (PRINT,relative move )
-  G0 Z[#<retract>]                                        (PRINT,move away )
+  G0 Z[#<retract>]                                        (PRINT,move away  )
   G0 Z-[#<retract>/2]                                     (PRINT,go forward )
   G38.2 Z-[#<retract>] F[#<slow>]                         (PRINT,trip switch very slowly )
   G0 Z[#<retract>]
   G0 Z10
   G90   
   G53 G0 Z[#<trv>]                                      (PRINT, return to safe level)
-  G10 L1 P[#<_current_tool>] X0Y0Z[#5063]             	(PRINT, Set Probe W offset to probe height in coordinate system 9)
+  G10 L1 P[#<_current_tool>] X0Y0Z[#5063]             	(PRINT, Set Probe W offset to probe height in coordinate system 9 )
   M72                                                   (PRINT, restore modal state)
 O103 ELSE
-  G43 H1
   G53 G0 Z[#<trv>]                                        (PRINT,go to high travel level on Z )
-  #<zDelta>=[#<_z>-#<trv>]                                (PRINT,retrieve absolute offset )
-  G53 G0 X[#<tsx>] Y[#<tsy>]                              (PRINT,to tool setter )
-  G38.2 Z[#<_ini[AXIS_Z]MIN_LIMIT>+#<zDelta>] F[#<fast>]  (PRINT,trip switch slowly )
-  G91                                                     (PRINT,relative move )
-  G0 Z[#<retract>]                                        (PRINT,move away )
+  #<zDelta>=[#<_z>-#<trv>]                                (PRINT,retrieve absolute offset  d- #<zDelta> z- #<_z>)
+  G53 G0 X[#<tsx>] Y[#<tsy>]                              (PRINT,to tool setter  d- #<zDelta> z- #<_z>)
+  G38.2 Z[#<_ini[AXIS_Z]MIN_LIMIT>+#<zDelta>] F[#<fast>]  (PRINT,trip switch slowly  d- #<zDelta> z- #<_z>)
+  G91                                                     (PRINT,relative move - [#5063])
+  G0 Z[#<retract>]                                        (PRINT,move away - [#5063])
   G0 Z-[#<retract>/2]                                     (PRINT,go forward )
   G38.2 Z-[#<retract>] F[#<slow>]                         (PRINT,trip switch very slowly )
   G0 Z[#<retract>]
   G90   
   G53 G0 Z[#<trv>]                                      (PRINT, return to safe level)
-  G43 H1                                                (PRINT, Load tool offsets for probe)
-  G10 L1 P[#<_current_tool>] Z[#5063]   (PRINT, Set tool offset in tool table)
+  G43 H1                                                (PRINT, Load tool offsets for probe - [#5063])
+  G10 L1 P[#<_current_tool>] Z[#5063]                   (PRINT, Set tool offset in tool table - [#5063])
   M72                                                   (PRINT, restore modal state )
   G43 H#<_current_tool>                                  (PRINT, Apply tool offset)
 O103 ENDIF

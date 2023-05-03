@@ -1,9 +1,8 @@
-#!/usr/bin/env python3
+#! /usr/bin/python2
 import sys, os
 import gettext
 BASE = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), ".."))
-
-gettext.install("linuxcnc", localedir=os.path.join(BASE, "share", "locale"))
+gettext.install("linuxcnc", localedir=os.path.join(BASE, "share", "locale"), unicode=True)
 
 import linuxcnc, hal
 
@@ -33,37 +32,26 @@ def stop_polling_hal_in_background():
     if _after: app.after_cancel(_after)
     _after = None
 
-def tool_probe(n):
+def do_probe():
     c = linuxcnc.command()
-    c.mdi("O<probe-tool>")
+    c.mdi("O<probe_tool> call")
     c.wait_complete()
 
 def do_change(n):
-    r = -1
     if n:
-        message = _("Insert tool %d and click 'Continue' to continue using existing offset or 'Set Height & Continue' to probe tool height.") % n
-        app.wm_withdraw()
-        app.update()
-        poll_hal_in_background()
-        try:
-            r = app.tk.call("nf_dialog", ".tool_change",
-                _("Tool change"), message, "info", 0, _("Continue", "Set Height & Continue"))
-            if isinstance(r, str): r = int(r)
-            if r == 1:
-                tool_probe(n)
-                r = 0
-        finally:
-            stop_polling_hal_in_background()
+        message = _("Insert tool %d and click continue when ready") % n
     else:
-        message = _("Remove the tool and click 'Continue' when ready")
-        app.wm_withdraw()
-        app.update()
-        poll_hal_in_background()
-        try:
-            r = app.tk.call("nf_dialog", ".tool_change",
-                _("Tool change"), message, "info", 0, _("Continue"))
-        finally:
-            stop_polling_hal_in_background()
+        message = _("Remove the tool and click continue when ready")
+    app.wm_withdraw()
+    app.update()
+    poll_hal_in_background()
+    try:
+        r = app.tk.call("nf_dialog", ".tool_change", _("Tool change"), message, "info", 0, _("Continue"), _("Probe & Continue"))
+        if r == 1:
+            do_probe()
+            r = 0
+    finally:
+        stop_polling_hal_in_background()
     if isinstance(r, str): r = int(r)
     if r == 0:
         h.changed = True
@@ -76,17 +64,15 @@ h.newpin("change_button", hal.HAL_BIT, hal.HAL_IN)
 h.newpin("changed", hal.HAL_BIT, hal.HAL_OUT)
 h.ready()
 
-import nf, rs274.options
+import Tkinter, nf, rs274.options
 
-import tkinter
-
-app = tkinter.Tk(className="AxisToolChanger")
+app = Tkinter.Tk(className="AxisToolChanger")
 app.wm_geometry("-60-60")
 app.wm_title(_("AXIS Manual Toolchanger"))
 rs274.options.install(app)
 nf.start(app); nf.makecommand(app, "_", _)
 app.wm_protocol("WM_DELETE_WINDOW", app.wm_withdraw)
-lab = tkinter.Message(app, aspect=500, text = _("\
+lab = Tkinter.Message(app, aspect=500, text = _("\
 This window is part of the AXIS manual toolchanger.  It is safe to close \
 or iconify this window, or it will close automatically after a few seconds."))
 lab.pack()

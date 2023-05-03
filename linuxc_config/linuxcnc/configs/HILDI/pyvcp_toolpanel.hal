@@ -4,7 +4,8 @@ net current-tool-number halui.tool.number
 net current-tool-number => pyvcp.tool-number
 
 # link the spindle speed signal to the spingle speed number in the gui
-net spindle-rpm-filtered => pyvcp.spindle-speed
+net current-spindle-speed spindle.0.speed-out
+net current-spindle-speed => pyvcp.spindle-speed
 
 # for linking the buttons to the gcodes (in the INI file)
 net lt1 halui.mdi-command-00 <= pyvcp.tool1-button

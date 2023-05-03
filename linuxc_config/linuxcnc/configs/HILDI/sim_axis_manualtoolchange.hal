@@ -1,0 +1,31 @@
+#loadusr -W hal_manualtoolchange
+
+# for simulated probe timer
+loadrt timedelay      names=probe-timer
+#loadrt comp           names=detect-type,comp_x,comp_y,comp_z
+loadrt conv_s32_float
+
+loadusr -W /home/hsbne/linuxcnc/configs/HILDI/hal_manualtoolchange.py
+
+# for simulated probe timer
+addf detect-type            servo-thread        # triggers = on 5
+addf probe-timer            servo-thread        # timedelay for probe sig
+addf conv-s32-float.0       servo-thread        # s32 to Float converter
+
+# in case they were linked already
+unlinkp iocontrol.0.tool-change
+unlinkp iocontrol.0.tool-changed
+
+
+net tool-change-request     iocontrol.0.tool-change       =>  hal_manualtoolchange.change
+net tool-change-confirmed   iocontrol.0.tool-changed      <=  hal_manualtoolchange.changed
+net tool-number             iocontrol.0.tool-prep-number  =>  hal_manualtoolchange.number
+
+# simulate a probe hit
+net type-motion <= motion.motion-type => conv-s32-float.0.in
+net type-hit <= conv-s32-float.0.out => detect-type.in0 # is comp
+setp detect-type.in1 5.0000000  # looking for a 5
+net sim-probe <= detect-type.equal => probe-timer.in
+setp probe-timer.on-delay 6.0
+setp probe-timer.off-delay 0.001
+net probe-hit <= probe-timer.out => motion.probe-input
