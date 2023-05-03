@@ -1,0 +1,80 @@
+( see: http://www.linuxcnc.org/index.php/english/forum/10-advanced-configuration/5596-manual-tool-change--tool-lengh-touch-off?start=120#227008 )
+
+( Filename: probel_tool.ngc )
+( LinuxCNC Manual Tool-Change Subroutines for Milling Machines version 1.1: subroutine 1/2 )
+( BEFORE USING CHANGE "CONFIGURATION PARAMETERS" BELOW FOR YOUR MACHINE! )
+(  )
+
+( In the LinuxCNC .ini config file, under the [RS274NGC] section add: )
+(    # change/add/use SUBROUTINE_PATH to point to the location where these tool-change subroutines are located: )
+(    SUBROUTINE_PATH = macros )
+(    REMAP=M190 modalgroup=4 ngc=probe_tool )
+
+( and under the [EMCIO] section add: )
+(    TOOL_CHANGE_AT_G30 = 0 )
+
+( and ensure neither TOOL_CHANGE_POSITION nor TOOL_CHANGE_QUILL_UP is set. )
+
+( In the LinuxCNC .hal config file, map some input pin to be the probe input, e.g.: )
+(    net probe-z parport.0.pin-12-in => motion.probe-input )
+( For multiple probe inputs, the following can be used, in this case a MESA 7i96 is controlling a NO probe, and a NC Toolsetter )
+( net probe-in <= hm2_7i96.0.gpio.005.in )
+( net length-in <= hm2_7i96.0.gpio.009.in_not )
+( net probe-in => or2.0.in0 )
+( net length-in => or2.0.in1 )
+( net probe-or-length <= or2.0.out => motion.probe-input )
+( The following tool change pins are required as well; )
+( loadusr -W hal_manualtoolchange )
+( net tool-change iocontrol.0.tool-change => hal_manualtoolchange.change )
+( net tool-changed iocontrol.0.tool-changed <= hal_manualtoolchange.changed )
+( net tool-number iocontrol.0.tool-prep-number => hal_manualtoolchange.number )
+( net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared )
+
+( Usage: M6 in the g-code will invoke a manual tool change with automatic tool height adjustment. )
+
+
+O<probe_tool> SUB
+
+#<tsx> = #<_ini[TOOLSENSOR]X>
+#<tsy> = #<_ini[TOOLSENSOR]Y>
+#<tsz> = #<_ini[TOOLSENSOR]Z>
+#<trv> = #<_ini[TOOLSENSOR]TRAVELZ>
+
+O102 IF [ #<_metric> EQ 1 ]                             (PRINT,set probe feeds according to units )
+  #<fast> =  1500.0                                     (PRINT,selected speed unit mm/mn )
+  #<slow> =   30.0
+  #<retract> = 3.0                                      (PRINT,mm )
+O102 ELSE
+  #<fast> =    6.0                                      (PRINT,selected speed unit in/mn )
+  #<slow> =    1.2
+  #<retract> = 0.1                                      (PRINT,in )
+O102 ENDIF
+
+M70                                                     (PRINT,save current modal state )
+G40                                                     (PRINT,turn cutter radius compensation off here )
+G49                                                     (PRINT,clear tool length compensation )
+G90                                                     (PRINT,use absolute positioning here )
+G94                                                     (PRINT,use feedrate in units/min )
+
+G59.3                                                   (PRINT, Change to co-ordinate system 9 )
+G10 L2 P0 X[#<tsx>] Y[#<tsy>] Z[#<tsz>]                 (PRINT, Set coordinate system offset to toolsensor position)                                           (PRINT,absolute moves)
+
+G53 G0 Z[#<trv>]                                        (PRINT,go to high travel level on Z )
+#<zDelta>=[#<_z>-#<trv>]                                (PRINT,retrieve absolute offset  d- #<zDelta> z- #<_z>)
+G53 G0 X[#<tsx>] Y[#<tsy>]                              (PRINT,to tool setter  d- #<zDelta> z- #<_z>)
+G38.2 Z[#<_ini[AXIS_Z]MIN_LIMIT>+#<zDelta>] F[#<fast>]  (PRINT,trip switch slowly  d- #<zDelta> z- #<_z>)
+G91                                                     (PRINT,relative move - [#5063])
+G0 Z[#<retract>]                                        (PRINT,move away - [#5063])
+G0 Z-[#<retract>/2]                                     (PRINT,go forward )
+G38.2 Z-[#<retract>] F[#<slow>]                         (PRINT,trip switch very slowly )
+G0 Z[#<retract>]
+G90   
+G53 G0 Z[#<trv>]                                        (PRINT, return to safe level)
+G43 H1                                                  (PRINT, Load tool offsets for probe - [#5063])
+G10 L1 P[#<_current_tool>] Z[#5063]                     (PRINT, Set tool offset in tool table - [#5063])
+M72                                                     (PRINT, restore modal state )
+G43 H#<_current_tool>                                   (PRINT, Apply tool offset)
+
+O<probe_tool> ENDSUB
+
+M2
