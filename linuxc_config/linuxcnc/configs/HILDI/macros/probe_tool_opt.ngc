@@ -33,12 +33,14 @@
 ( Usage: M6 in the g-code will invoke a manual tool change with automatic tool height adjustment. )
 
 
-O<probe_tool> SUB
+O<probe_tool_opt> SUB
 
 #<tsx> = #<_ini[TOOLSENSOR]X>
 #<tsy> = #<_ini[TOOLSENSOR]Y>
 #<tsz> = #<_ini[TOOLSENSOR]Z>
 #<trv> = #<_ini[TOOLSENSOR]TRAVELZ>
+#<chx> = #<_ini[CHANGE_POSITION]X>
+#<chy> = #<_ini[CHANGE_POSITION]Y>
 
 O102 IF [ #<_metric> EQ 1 ]                             (PRINT,set probe feeds according to units )
   #<fast> =  1500.0                                     (PRINT,selected speed unit mm/mn )
@@ -60,6 +62,8 @@ G59.3                                                   (PRINT, Change to co-ord
 G10 L2 P0 X[#<tsx>] Y[#<tsy>] Z[#<tsz>]                 (PRINT, Set coordinate system offset to toolsensor position)                                           (PRINT,absolute moves)
 
 G53 G0 Z[#<trv>]                                        (PRINT,go to high travel level on Z )
+G53 G0 X[#<chx>] Y[#<chy>]                              (PRINT,Move over probe )
+
 #<zDelta>=[#<_z>-#<trv>]                                (PRINT,retrieve absolute offset  d- #<zDelta> z- #<_z>)
 G53 G0 X[#<tsx>] Y[#<tsy>]                              (PRINT,to tool setter  d- #<zDelta> z- #<_z>)
 G38.2 Z[#<_ini[AXIS_Z]MIN_LIMIT>+#<zDelta>] F[#<fast>]  (PRINT,trip switch slowly  d- #<zDelta> z- #<_z>)
@@ -75,6 +79,6 @@ G10 L1 P[#<_current_tool>] Z[#5063]                     (PRINT, Set tool offset 
 M72                                                     (PRINT, restore modal state )
 G43 H#<_current_tool>                                   (PRINT, Apply tool offset)
 
-O<probe_tool> ENDSUB
+O<probe_tool_opt> ENDSUB
 
 M2

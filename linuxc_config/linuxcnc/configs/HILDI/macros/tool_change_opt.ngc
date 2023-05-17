@@ -1,0 +1,59 @@
+( see: http://www.linuxcnc.org/index.php/english/forum/10-advanced-configuration/5596-manual-tool-change--tool-lengh-touch-off?start=120#227008 )
+
+( Filename: tool-change.ngc )
+( LinuxCNC Manual Tool-Change Subroutines for Milling Machines version 1.1: subroutine 1/2 )
+( BEFORE USING CHANGE "CONFIGURATION PARAMETERS" BELOW FOR YOUR MACHINE! )
+(  )
+
+( In the LinuxCNC .ini config file, under the [RS274NGC] section add: )
+(    # change/add/use SUBROUTINE_PATH to point to the location where these tool-change subroutines are located: )
+(    SUBROUTINE_PATH = macros )
+(    REMAP=M6    modalgroup=6 ngc=tool-change )
+
+( and under the [EMCIO] section add: )
+(    TOOL_CHANGE_AT_G30 = 0 )
+
+( and ensure neither TOOL_CHANGE_POSITION nor TOOL_CHANGE_QUILL_UP is set. )
+
+( In the LinuxCNC .hal config file, map some input pin to be the probe input, e.g.: )
+(    net probe-z parport.0.pin-12-in => motion.probe-input )
+( For multiple probe inputs, the following can be used, in this case a MESA 7i96 is controlling a NO probe, and a NC Toolsetter )
+( net probe-in <= hm2_7i96.0.gpio.005.in )
+( net length-in <= hm2_7i96.0.gpio.009.in_not )
+( net probe-in => or2.0.in0 )
+( net length-in => or2.0.in1 )
+( net probe-or-length <= or2.0.out => motion.probe-input )
+( The following tool change pins are required as well; )
+( loadusr -W hal_manualtoolchange )
+( net tool-change iocontrol.0.tool-change => hal_manualtoolchange.change )
+( net tool-changed iocontrol.0.tool-changed <= hal_manualtoolchange.changed )
+( net tool-number iocontrol.0.tool-prep-number => hal_manualtoolchange.number )
+( net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared )
+
+
+O<tool_change_opt> SUB
+                                                          (PRINT,tool change routine BEGIN )
+                                                          (PRINT,current tool is #<_current_tool>)
+                                                          (PRINT,selected tool is #<_selected_tool>)
+O100 IF [ #<_selected_tool> EQ #<_current_tool> ]
+  #4921 = 0                                               (PRINT,LinuxCNC starting, initialize value)
+O100 ELSE
+
+  #<chx> = #<_ini[CHANGE_POSITION]X>
+  #<chy> = #<_ini[CHANGE_POSITION]Y>
+  #<chz> = #<_ini[CHANGE_POSITION]Z>
+  #<trv> = #<_ini[TOOLSENSOR]TRAVELZ>
+
+  M9                                                      (PRINT,turn off coolant, will be restored on return if it was on )
+  M5                                                      (PRINT,turn off spindle, cannot be on during the probe )
+
+  G53 G0 Z[#<trv>]                                        (PRINT,moves to safe height for travelling)
+  G53 G0 Z[#<chz>]                                        (PRINT,moves to desired potion for manual tool change )
+  M6                                                      (PRINT,do the normal M6 stuff )
+
+O100 ENDIF
+
+                                                          (PRINT,tool change routine END)
+O<tool_change_opt> ENDSUB
+
+M2
